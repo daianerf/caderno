@@ -1,0 +1,38 @@
+/* Fundo da barra de navegação rosa claro */
+.navbar {
+  background-color: #f8bbd0 !important;  /* Rosa pastel */
+}
+
+/* Cor dos links no topo */
+.navbar a {
+  color: #5a2a4a !important;  /* Roxo escuro para contraste suave */
+}
+
+/* Cor dos botões, títulos e destaques */
+.btn, .btn-primary, h1, h2, h3, h4 {
+  color: #a5698e;  /* Rosa discreto */
+}
+
+/* Links em rosa suave */
+a {
+  color: #b36b8a;
+}
+
+footer .footer-content {
+  display: flex !important;
+  justify-content: center !important;
+  text-align: center !important;
+  gap: 0.5em; /* espaço entre textos */
+}
+
+footer .footer-left,
+footer .footer-right {
+  flex: none !important; /* evitar que fiquem separados */
+  margin: 0;
+}
+.nav-link.active {
+  font-weight: bold;
+  color: #d63384 !important; /* Rosa discreto */
+  border-bottom: 2px solid #d63384; /* Opcional: linha embaixo */
+}
+

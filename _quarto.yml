@@ -1,0 +1,78 @@
+project:
+  type: website
+
+website:
+  title: "FIP_606"
+
+  navbar:
+    left:
+      - text: "Sobre"
+        file: index.qmd
+        icon: id-badge
+      - text: "Básico do R"
+        icon: book 
+        menu:
+          - file: introducao.qmd
+            text: "Introdução"
+          - file: pacotes.qmd
+            text: "Pacotes"
+          - file: importando_dados.qmd
+            text: "Importando Dados"
+      - text: "Gráficos em R Studio"
+        file: graficos.qmd
+        icon: graph-down
+      - text: "Análises Estatísticas"
+        icon: bar-chart
+        menu:
+          - file: teste_t.qmd
+            text: "Teste T"
+          - file: transformacao.qmd
+            text: "Transformações"
+          - file: anova.qmd
+            text: "ANOVA"
+          - file: nao_parametrica.qmd
+            text: "Testes não Paramétricos"
+          - file: regressao.qmd
+            text: "Análise de Regressão"
+          - file: correlacao.qmd
+            text: "Análise de Correlação"
+          - file: frequencia.qmd
+            text: "Comparação de Frequência"
+          - file: teste_media.qmd
+            text: "Teste de Médias"
+      - text: "Elaborando Mapas"
+        file: mapas.qmd
+        icon: geo-alt
+
+    right:
+      - text: "Daiane Fernandes"
+        icon: github
+        href: https://github.com/daianerf
+      - icon: linkedin
+        href: https://www.linkedin.com/in/daiane-fernandes-2996491b3
+      - icon: envelope
+        href: "mailto:daiane.fernandes@ufv.br"
+
+  page-footer:
+    left: "© 2025 - Daiane Rocha Fernandes — Feito com [Quarto](https://quarto.org)"
+
+format:
+  html:
+    theme:
+      light: minty
+      dark: darkly
+    css: styles.css
+    toc: true
+    code-tools: true
+    code-fold: true
+    code-line-numbers: true
+    warning: false
+    message: false
+    echo: true
+
+metadata:
+  author: "Daiane Rocha Fernandes"
+
+editor: visual
+
+

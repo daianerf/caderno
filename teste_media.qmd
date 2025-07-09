@@ -1,0 +1,139 @@
+---
+format: html
+editor: visual
+---
+
+# **Teste de Tukey e Scott Knott (Pacote `ExpDes.pt`)**
+
+**Pacote “ExpDes.pt”**\
+O pacote `ExpDes.pt` é voltado para a análise de delineamentos experimentais, incluindo DIC, DBC e DQL. Ele permite realizar análises de variância e comparações de médias em diferentes tipos de experimentos, como:
+
+-   Esquemas fatoriais duplos e triplos (em DIC e DBC);
+
+-   Parcelas subdivididas (em DIC e DBC);
+
+-   Fatoriais com tratamento adicional (duplo ou triplo, em DIC e DBC).
+
+Oferece ferramentas para:
+
+-   Comparação de múltiplas médias (em tratamentos qualitativos);
+
+-   Ajuste de modelos de regressão até o terceiro grau (para tratamentos quantitativos);
+
+-   Análise de resíduos para verificar pressupostos do modelo.
+
+```{r warning(FALSE)}
+
+library(tidyverse)
+library(readxl)
+library(ExpDes.pt)
+```
+
+## **Teste de Tukey com pacote `ExpDes.pt` (Experimento em DIC)**
+
+### Instalar e carregar o pacote
+
+```{r}
+# Carregue o pacote
+library(ExpDes.pt)
+```
+
+### **Criar os dados de exemplo**
+
+Vamos supor que avaliamos a produtividade de 4 cultivares de milho, com 4 repetições cada:
+
+```{r}
+# Fator: tratamentos (cultivares)
+trat <- c(rep("A", 4), rep("B", 4), rep("C", 4), rep("D", 4))
+
+# Resposta: produtividade em kg/ha
+resp <- c(5000, 5200, 5100, 4950,
+          5300, 5400, 5350, 5250,
+          4800, 4700, 4900, 4750,
+          5100, 5000, 4950, 5050)
+```
+
+### Análise de variância com Tukey (DIC)
+
+`dic()`: realiza a análise para Delineamento Inteiramente Casualizado.
+
+`trat`: vetor com os tratamentos (fator qualitativo).
+
+`resp`: vetor com a variável resposta (produtividade).
+
+`quali = TRUE`: indica que os tratamentos são qualitativos.
+
+`mcomp = "tukey"`: escolhe o teste de comparação de médias de Tukey.
+
+`sigT = 0.05`: nível de significância (5%).
+
+```{r}
+dic(trat, resp, quali = TRUE, mcomp = "tukey", sigT = 0.05)
+```
+
+## **Teste de Tukey com pacote `ExpDes.pt` (dados transformados em raiz - sqrt)**
+
+```{r}
+insects <- InsectSprays
+
+insects$count2 <- sqrt(insects$count)
+
+dic(insects$spray,
+    insects$count2,
+    mcomp = "tukey")
+```
+
+## **Teste de Scott Knott - pacote `ExpDes.pt`**
+
+O método de Scott-Knott é uma técnica eficiente para comparar tratamentos em experimentos, especialmente quando o objetivo é agrupar médias em conjuntos homogêneos. Esse método busca minimizar a variabilidade dentro dos grupos e, ao mesmo tempo, maximizar a diferença entre eles, evitando sobreposição. Para isso, as médias dos tratamentos são ordenadas, permitindo sua classificação. Em seguida, são avaliadas todas as possíveis divisões (partições) com o propósito de identificar a melhor separação entre os grupos.
+
+### **Experimento em DIC**
+
+```{r}
+#Agrupamento pelo teste de Scott Knott: O teste agrupa médias e serve para 1 fator apenas.
+
+dic(insects$spray,
+    insects$count2,
+    mcomp = "sk")
+```
+
+### **Experimento em DBC**
+
+#### Criar dados de exemplo
+
+Vamos supor que testamos 5 cultivares de feijão, com 4 blocos (repetições):
+
+```{r}
+# Tratamentos (cultivares)
+trat <- c(rep("A",4), rep("B",4), rep("C",4), rep("D",4), rep("E",4))
+
+# Blocos (repetições)
+bloco <- rep(1:4, 5)
+
+# Produtividade em kg/ha (variável resposta)
+resp <- c(1800, 1850, 1750, 1820,  # A
+          2100, 2150, 2080, 2120,  # B
+          1700, 1680, 1720, 1690,  # C
+          1950, 1980, 1930, 1970,  # D
+          2200, 2250, 2220, 2180)  # E
+```
+
+#### **Análise de variância + Scott-Knott (DBC)**
+
+`dbc()`: função para analisar um experimento em Delineamento em Blocos Casualizados.
+
+`trat`: vetor com os tratamentos (cultivares).
+
+`bloco`: vetor com os blocos (repetições).
+
+`resp`: vetor com a variável resposta (ex: produtividade).
+
+`quali = TRUE`: indica que os tratamentos são qualitativos.
+
+`mcomp = "sk"`: aplica o **teste de Scott-Knott** para comparação de médias.
+
+`sigT = 0.05`: nível de significância de 5%.
+
+```{r}
+dbc(trat, bloco, resp, quali = TRUE, mcomp = "sk", sigT = 0.05)
+```

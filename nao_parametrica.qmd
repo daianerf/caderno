@@ -1,0 +1,169 @@
+---
+format: html
+editor: visual
+---
+
+# **Teste Não Paramétrico**
+
+Os testes não paramétricos são métodos estatísticos que não exigem que os dados sigam uma distribuição específica, como a normal. Por isso, são úteis quando as suposições dos testes paramétricos não são atendidas. Eles trabalham com dados em forma de postos (ordens) ou categorias e são ideais para amostras pequenas, dados assimétricos ou com *outliers*.
+
+**Exemplo:** conjunto *InsectSprays:* efeito de inseticida na mortalidade de insetos. Dados no pacote `datasets` do R.
+
+### Carregando o conjunto de dados
+
+```{r}
+insects <- tibble::as_tibble(InsectSprays) |>
+  dplyr::select(spray, count)
+insects
+```
+
+### Análise visual dos dados
+
+```{r}
+library(ggplot2)
+
+insects |>
+  ggplot(aes(spray, count)) +
+  geom_boxplot(fill = "lightblue")
+```
+
+## Teste - Modelo ANOVA
+
+Quando se analisa um conjunto de dados e esses dados apresentam-se como não paramétricos, deve-se trabalhar esses dados de uma forma diferente. Mas antes, deve-se comprovar por meio da anova e da checagem das premissas, que os dados realmente não são normais e homogêneos.
+
+```{r}
+aov2 <- aov(count ~ spray, data = insects)
+summary(aov2)
+```
+
+### Checagem das premissas
+
+```{r}
+library(performance)
+check_normality(aov2)
+```
+
+```{r}
+check_heteroscedasticity(aov2)
+```
+
+A partir da checagem das premissas, observa-se que os dados não são normais e homogeneos.
+
+## **Alternativas para dados não paramétricos**
+
+Quando se tem dados não paramétricos, tem-se 3 alternativas:
+
+1.  Transformar os dados (Exemplo: raiz quadrada, log, Box cox);
+
+2.  Usar testes não paramétricos (*Kruskal-Wallis*);
+
+3.  Ou usar modelos lineares generalizados.
+
+### **1. Transformar os dados para normalizar**
+
+Exemplo: Usando a raiz quadrada para tentar normalizar e tornar os dados normais e homogenos.
+
+Pode-se também tentar o log da variável resposta + 0.5.
+
+```{r}
+aov2 <- aov(sqrt(count) ~ spray, data = insects)
+summary(aov2)
+```
+
+#### Checagem das premissas
+
+```{r}
+check_normality(aov2)
+```
+
+```{r}
+check_heteroscedasticity(aov2)
+```
+
+### **2. Uso de testes não paramétricos**
+
+Se com as transformações não normalizar e ainda forem heterogêneos, usa-se testes não paramétricos.
+
+Uma das saídas para normalizar os dados é a utilização do teste de *Kruskal-Wallis*. O teste de Kruskal-Wallis utiliza os valores numéricos transformados em postos e agrupados num só conjunto de dados, é testado se as amostras vêm de uma mesma população, ou se pelo menos uma delas vêm de população distinta das demais. O teste de Kruskal-Wallis dispensa a pressuposição de normalidade e homocedasticidade. Tem 2 opções de teste Kruskal. Para usar essa opção, é necessário baixar e carregar o pacote agricolae.
+
+#### Teste de *Kruskal-Wallis*
+
+É utilizado em situações onde queremos comparar mais de dois grupos independentes, de tamanhos iguais ou não, com variável resposta quantitativa. É uma alternativa quando os pressupostos necesários para o teste F da Anova não são atendidos, pois este teste dispensa a pressuposição de normalidade e homocedasticidade.
+
+```{r warning(FALSE)}
+library(agricolae)
+
+kruskal.test(count ~ spray, data = insects)
+```
+
+```{r}
+kruskal(insects$count, insects$spray, 
+        console = TRUE)
+```
+
+O pacote `emmeans` é muito útil na análise de Modelos Lineares Generalizados (GLM), pois permite obter as médias marginais estimadas dos fatores no modelo.
+
+```{r}
+aov2 <- aov(count ~ spray, data = insects)
+summary(aov2)
+```
+
+##### Checagem das premissas
+
+```{r}
+check_normality(aov2)
+```
+
+```{r}
+check_heteroscedasticity(aov2)
+```
+
+Função `emmeans`: tirar a média da variável inseticida. Para dar o valor original da média e não o valor transformado, usa-se a função `type = response`.
+
+```{r}
+library(emmeans)
+aov2_means <- emmeans(aov2, ~ spray,
+                         type = "response")
+aov2_means
+```
+
+A função `pwpm` gera uma tabela de comparação das médias e `cld` é uma função que serve para gerar os números que diferenciam os grupos de médias.
+
+```{r}
+pwpm(aov2_means)
+```
+
+```{r naoparametrica, warning=FALSE}
+
+library(MASS)
+library(mvtnorm)
+library(survival)
+library(TH.data)
+library(multcomp)
+library(multcompView)
+cld(aov2_means)
+```
+
+#### 3. **GLM – Modelos Lineares Generalizados**
+
+A função `glm` é utilizada para ajustar Modelos Lineares Generalizados no R. Esses modelos permitem trabalhar com diferentes distribuições de erro, como binomial, *Poisson* e outras, tornando possível a análise de variáveis resposta que não seguem uma distribuição normal. O modelo é definido por uma fórmula simbólica que relaciona a variável resposta aos preditores, e pela escolha de uma família de distribuição que representa o tipo de dado analisado. Para publicação de artigos, essa é a opção mais aconselhável.
+
+Para a geração de modelos, a função a ser utilizada é a `glm` e precisa indicar os argumentos f*amily = poisson(link = “identity”)*. Para visualizar, pode usar o pacote `Dharma` e gerar um plot.
+
+```{r}
+library(DHARMa)
+
+glm1 <- glm(count ~spray,
+             data = insects,
+             family = poisson(link = "identity"))
+plot(simulateResiduals(glm1))
+```
+
+```{r}
+summary(glm1)
+```
+
+```{r}
+glm1_means <- emmeans(glm1, ~ spray)
+cld(glm1_means)
+```

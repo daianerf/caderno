@@ -1,0 +1,265 @@
+---
+format: html
+editor: visual
+---
+
+# **Análise de Correlação**
+
+A análise de correlação é utilizada para verificar a intensidade e a direção da relação linear entre duas variáveis contínuas. Seu principal objetivo é avaliar até que ponto as variáveis se associam — ou seja, se tendem a variar juntas de forma proporcional.
+
+Essa análise pode indicar:
+
+-   **Correlação positiva**: quando o aumento de uma variável está associado ao aumento da outra;
+
+-   **Correlação negativa**: quando o aumento de uma variável está associado à diminuição da outra;
+
+-   **Ausência de correlação**: quando não há uma relação linear evidente entre as variáveis.
+
+O coeficiente de correlação de Pearson é a medida mais comum e varia entre -1 e +1:
+
+-   Valores próximos de **+1** indicam forte correlação positiva;
+
+-   Valores próximos de **-1** indicam forte correlação negativa;
+
+-   Valores próximos de **0** indicam correlação fraca ou inexistente.
+
+É importante destacar que a correlação não implica causalidade, ou seja, uma variável pode estar associada à outra sem que necessariamente uma cause a outra.
+
+### Carregamento de pacotes
+
+```{r warning(FALSE)}
+library(tidyverse)
+library(readxl)
+library(ggplot2)
+```
+
+### Importando o conjunto de dados
+
+```{r}
+estande <- read_excel("dados-diversos.xlsx", "estande")
+```
+
+### Visualização gráfica
+
+```{r}
+estande |>
+  ggplot(aes(trat, nplants))+
+  geom_point()+
+  facet_wrap(~ exp)+
+  ylim(0,max(estande$nplants))+
+  geom_smooth(se =  F)
+```
+
+## **Ajustando modelo linear simples e quadratico**
+
+Para ajustar modelos de regressão linear — seja simples ou quadrático — utiliza-se a função `lm()` no R. Essa função recebe como argumentos uma **fórmula** que define a relação entre a variável dependente e a(s) variável(is) independente(s), além do conjunto de dados a ser utilizado.
+
+Por exemplo, para um modelo linear simples, a fórmula seria `y ~ x`, onde `y` é a variável resposta e `x` é a variável explicativa. Para um modelo quadrático, a fórmula pode ser `y ~ x + I(x^2)`, incluindo o termo ao quadrado de `x`.
+
+O modelo ajustado é armazenado como um objeto do tipo `lm`, que pode ser examinado com a função `summary()`. Esse resumo fornece os coeficientes estimados, valores-p, estatísticas de ajuste (como o R²) e outros diagnósticos úteis.
+
+### Coeficiente de Determinação (R²)
+
+O **R²** representa a proporção da variação da variável resposta que é explicada pelo modelo ajustado. Seu valor varia entre 0 e 1:
+
+-   **R² = 0**: o modelo não explica nenhuma variação nos dados;
+
+-   **R² = 1**: o modelo explica toda a variação observada.
+
+Quanto maior o R², melhor o modelo se ajusta aos dados, indicando maior capacidade explicativa por parte das variáveis independentes.
+
+```{r}
+estande2 <- estande |>
+  filter(exp ==2) |>
+  group_by(trat) |>
+  summarise(mean_nplants = mean(nplants))
+  
+estande2|>
+  ggplot(aes(trat, mean_nplants))+
+  geom_point()+
+  #geom_line()
+  geom_smooth(formula = y ~ poly(x, 2), method = "lm", color = "black")+
+  annotate(geom = "text", 
+           x = 25, y = 70,
+           label = "y = 66.3 - 1.777x + 0.0222x2
+           R2 = 0.0.88")
+```
+
+## Modelo Quadrático
+
+Diferente do modelo linear, que descreve a relação entre duas variáveis por meio de uma linha reta, o modelo quadrático permite identificar padrões não lineares, com comportamento curvo.
+
+Para ajustar um modelo quadrático no R, utiliza-se a função `lm()`, incluindo o termo ao quadrado da variável independente na fórmula. Por exemplo, para modelar a relação entre uma variável dependente `y` e uma independente `x`.
+
+```{r}
+estande2 <- estande2 |>
+  mutate(trat2 = trat^2)
+  m1 <- lm(mean_nplants ~ trat, data = estande2)
+summary(m1)
+```
+
+```{r}
+hist(m1$residuals)
+```
+
+```{r}
+m2 <- lm(mean_nplants ~ trat + trat2,
+         data = estande2)
+summary(m2)
+```
+
+```{r}
+AIC(m1, m2)
+```
+
+## **Duas variáveis resposta**
+
+### Ajuste de Modelo Linear Simples e Quadrático
+
+Para ajustar modelos de regressão linear, seja simples ou quadrático, utiliza-se a função `lm()` no R. Essa função recebe como argumentos uma fórmula que define a relação entre a variável dependente e a(s) variável(is) independente(s), além do conjunto de dados a ser utilizado.
+
+Por exemplo, para um modelo linear simples, a fórmula seria `y ~ x`, onde `y` é a variável resposta e `x` é a variável explicativa. Para um modelo quadrático, a fórmula pode ser `y ~ x + I(x^2)`, incluindo o termo ao quadrado de `x`.
+
+O modelo ajustado é armazenado como um objeto do tipo `lm`, que pode ser examinado com a função `summary()`. Esse resumo fornece os coeficientes estimados, valores-p, estatísticas de ajuste (como o R²) e outros diagnósticos úteis.
+
+#### Importando o conjunto de dados
+
+```{r}
+mofo <- read_excel("dados-diversos.xlsx", "mofo")
+```
+
+#### Visualizando os dados
+
+```{r}
+mofo |>
+  ggplot(aes(inc, yld))+
+  geom_point()+
+  geom_smooth(se = F, method = "lm")+
+  facet_wrap(~ study)
+```
+
+Filtrando o experimento 1 (study = 1):
+
+```{r}
+mofo1 <- mofo |>
+  filter(study ==1)
+mofo1
+```
+
+A função `cor.test()` é utilizada para calcular o **coeficiente de correlação** entre duas variáveis numéricas. Além de fornecer o valor da correlação (como o coeficiente de Pearson), ela também realiza um **teste de hipótese** para verificar se essa correlação é **estatisticamente significativa**, ou seja, se é improvável que tenha ocorrido ao acaso.
+
+```{r}
+cor.test(mofo1$inc, mofo1$yld)
+```
+
+Filtrando o experimento 2:
+
+```{r}
+mofo1 <- mofo |>
+  filter(study ==2)
+mofo1
+```
+
+```{r}
+cor.test(mofo1$inc, mofo1$yld)
+```
+
+Filtrando o experimento 4:
+
+```{r}
+mofo1 <- mofo |>
+  filter(study ==4)
+mofo1
+```
+
+```{r}
+cor.test(mofo1$inc, mofo1$yld)
+```
+
+Filtrando o experimento 3:
+
+```{r}
+mofo1 <- mofo |>
+  filter(study ==3)
+mofo1
+```
+
+### Matrizes de Correlação
+
+A matriz de correlação é uma tabela que exibe os coeficientes de correlação entre todos os pares de variáveis de um conjunto de dados. Cada célula da matriz indica a força e a direção da relação entre duas variáveis, geralmente usando o coeficiente de correlação de Pearson, embora outras medidas (como Spearman ou Kendall) também possam ser utilizadas, conforme o contexto da análise.
+
+Gerando matriz de correlação para as variáveis selecionadas:
+
+```{r}
+mofo1 <- mofo |>
+  filter(study ==3)
+mofo1
+```
+
+```{r}
+cor.test(mofo1$inc, mofo1$yld)
+```
+
+```{r}
+library(dplyr)
+
+cor(mofo1[, 3:5])
+```
+
+### Gráficos de Correlação
+
+Para visualizar matrizes de correlação, o pacote `corrplot` é uma ferramenta amplamente utilizada no R. Ele oferece diversas funções para explorar e representar visualmente as relações entre variáveis em um conjunto de dados, facilitando a identificação de padrões de correlação.
+
+Principais funções do pacote corrplot:
+
+-   `corr.test()`: realiza testes estatísticos para matrizes de correlação, calculando coeficientes de correlação, valores-p e intervalos de confiança, permitindo avaliar a significância das correlações.
+
+-   `corrplot()`: gera gráficos que exibem a matriz de correlação com diferentes estilos visuais. Permite personalizar o tipo de gráfico, as cores, adicionar os valores numéricos dos coeficientes, além de possibilitar agrupamentos hierárquicos.
+
+```{r}
+mofo1 <- mofo |>
+  filter(study ==3)
+mofo1
+```
+
+```{r}
+cor.test(mofo1$inc, mofo1$yld)
+```
+
+```{r}
+pcor <- cor(mofo1[, 3:5])
+
+library(corrplot)
+corrplot(pcor, method = 'number', type = "lower")
+```
+
+### Modelo de Kendall
+
+O coeficiente de correlação de Kendall é uma medida não paramétrica que avalia a associação entre duas variáveis ordinais ou variáveis medidas em escala ordinal. Assim como o coeficiente de Pearson, o coeficiente de Kendall varia entre -1 e 1, indicando a direção e a força da relação.
+
+Por ser não paramétrico, o método de Kendall é mais robusto em situações onde os dados não seguem uma relação linear ou quando as variáveis não possuem distribuição normal, sendo uma alternativa adequada para analisar associações em dados ordinais ou com distribuições não normais.
+
+```{r}
+mofo1 <- mofo |>
+  filter(study ==3)
+mofo1
+```
+
+```{r}
+shapiro.test(mofo1$inc)
+```
+
+```{r}
+shapiro.test(mofo1$yld)
+```
+
+```{r}
+cor.test(mofo1$inc, mofo1$yld, method = "spearman")
+```
+
+```{r}
+pcor <- cor(mofo1[, 3:5], method = "spearman")
+
+library(corrplot)
+corrplot(pcor, method = 'number', type = "lower")
+```

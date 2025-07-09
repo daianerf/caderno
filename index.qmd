@@ -1,0 +1,16 @@
+---
+format: html
+editor: visual
+---
+
+# **Bem-vindo ao meu website!**
+
+![](foto_daiane.jpg){fig-align="center" width="500"}
+
+Olá! Meu nome é [Daiane Rocha Fernandes](https://github.com/daianerf), sou Engenheira Agrônoma formada pelo Instituto Federal de Educação, Ciência e Tecnologia Baiano, [*campus* Guanambi](https://www.ifbaiano.edu.br/unidades/guanambi/). Atualmente, mestranda no [Programa de Pós-Graduação em Fitopatologia](https://www.dfp.ufv.br/) da Universidade Federal de Viçosa e atuo no [Laboratório de Controle Biológico de Fitonematoides (BIONEMA)](https://bioagro.ufv.br/laboratorio-de-controle-biologico-de-fitonematoides/), vinculado ao Instituto de Biotecnologia Aplicada à Agropecuária (BIOAGRO).
+
+Este site foi desenvolvido por mim utilizando Quarto Markdown, como parte da disciplina FIP 606 - Análise e Visualização de Dados em Fitopatologia, ministrada pelo professor [Emerson Del Ponte](https://emersondelponte.netlify.app/). O objetivo deste espaço é organizar e compartilhar os materiais e atividades produzidos ao longo da disciplina, com foco na aplicação da linguagem R para análise estatística e visualização de dados fitopatológicos.
+
+Sinta-se à vontade para explorar os conteúdos e conhecer um pouco mais sobre o uso de ferramentas computacionais aplicadas à Fitopatologia.
+
+Caso tenha dúvidas ou sugestões, sinta-se à vontade para entrar em contato comigo!

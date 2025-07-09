@@ -1,0 +1,159 @@
+---
+format: html
+editor: visual
+---
+
+# **Transformação de dados no R Studio**
+
+Antes de iniciar uma análise estatística no R, pode ser necessário transformar os dados, dependendo de suas características e das exigências do método analítico escolhido. Essas transformações são úteis para adequar os dados aos pressupostos da análise estatística, como a normalidade da distribuição e a homogeneidade das variâncias.
+
+Antes de realizar transformações, precisamos entender a natureza dos dados. Vamos trabalhar com o conjunto de dados mofo, presente na planilha dados-diversos.
+
+### Importando o conjunto de dados
+
+```{r warning(FALSE)}
+library(tidyverse)
+library(readxl)
+
+mofo <- read_excel("dados-diversos.xlsx", "mofo")
+```
+
+#### Visualização dos dados
+
+```{r}
+mofo |>
+  ggplot(aes(treat, inc)) +
+  facet_wrap(~study) +
+  geom_point(color = "#1A8C8C") +
+  labs(
+    x = "Tratamento",
+    y = "Incidência"
+  )
+```
+
+Histograma para visualizar a incidência e outro para visualizar os dados de escleródio.
+
+```{r}
+inc <- mofo |>
+  ggplot(aes(inc))+
+  geom_histogram(fill = "#1A8C8C")
+#Para o scleródio
+mofo |>
+    ggplot(aes(scl))+
+    geom_histogram(fill = "#1A8C8C")
+```
+
+Boxplot:
+
+```{r}
+scl <- mofo |>
+  ggplot(aes(scl))+
+  geom_boxplot()
+library(patchwork)
+inc + scl
+```
+
+Para achar a média podemos usar as funções \$, mean+conjunto ou summary.
+
+```{r}
+mofo$scl
+
+mean(mofo$scl)
+```
+
+Os dados podem ser transformados de diferentes formas, sendo as mais comuns log e raiz quadrada. 
+
+## **Transformação logarítmica**
+
+A transformação logarítmica é uma técnica comum utilizada na análise de dados para lidar com variáveis que apresentam distribuição assimétrica ou variância heterogênea. Ela pode ajudar a estabilizar a variância, aproximar os dados de uma distribuição normal e melhorar a interpretação dos resultados estatísticos.
+
+No RStudio, a transformação logarítmica pode ser aplicada facilmente com funções como `log()`, `log10()` (logaritmo na base 10) ou `log2()` (logaritmo na base 2), dependendo do contexto da análise. Podemos realizar essa transformação com o uso da função `mutate`. Através da função `mutate()` realizamos a criação/adição de uma nova variável (ou novas variaveis), que são funções de variáveis existentes, e também criamos/modificamos colunas.
+
+```{r}
+mofo2 <- mofo |>
+  mutate (scl2 = log(scl))
+  mofo2
+```
+
+### Visualizar os dados tranformados
+
+Histograma
+
+```{r}
+mofo2 |>
+  ggplot(aes(scl2)) +
+  geom_histogram(bins = 10, fill = "#1A8C8C", color = "black")
+
+```
+
+## Transformação em raiz quadrada
+
+A transformação em raiz quadrada é uma técnica estatística utilizada para corrigir assimetrias nos dados e estabilizar a variância, especialmente quando os dados representam contagens ou variáveis discretas com distribuição assimétrica.
+
+Esse tipo de transformação é útil quando os dados apresentam variância crescente com a média, o que viola pressupostos importantes de muitos testes estatísticos, como a ANOVA e o teste t.
+
+No RStudio, a transformação em raiz quadrada pode ser feita com a função `sqrt()`:
+
+```{r}
+mofo2 <- mofo |>
+  mutate (scl2 = sqrt(scl))
+  mofo2
+```
+
+### Visualizar os dados tranformados
+
+Histograma
+
+```{r}
+  mofo2 |>
+    ggplot(aes(scl2))+
+    geom_histogram(bins = 10, fill = "#1A8C8C", color = "black")
+```
+
+## **Transformação de dados Box-Cox**
+
+A transformação de Box-Cox é uma técnica estatística utilizada para estabilizar a variância e aproximar os dados de uma distribuição normal. Diferente de outras transformações fixas, como log ou raiz quadrada, a Box-Cox aplica uma família de transformações parametrizadas, permitindo encontrar automaticamente o melhor ajuste aos pressupostos dos modelos estatísticos.
+
+Ela é especialmente útil quando não se sabe previamente qual transformação aplicar, pois estima um parâmetro lambda (λ) que define a forma ideal da transformação.
+
+A transformação de Box-Cox é definida pela seguinte equação: y(lambda) = (x\^lambda - 1) / lambda
+
+Nessa equação, “x” representa a variável original, “y(lambda)” representa a variável transformada para um determinado valor de lambda e “lambda” é o parâmetro de transformação que varia de -∞ a +∞. O valor de lambda determina o tipo de transformação aplicada: Se lambda = 0, a transformação de Box-Cox é equivalente ao logaritmo natural (ln). Se lambda = 1, a transformação de Box-Cox é equivalente à transformação linear (sem transformação). Se lambda \< 0, é aplicada uma transformação inversa.
+
+A transformação Box-Cox pode ser aplicada usando a função `boxcox()` do pacote `MASS.`
+
+```{r}
+library(MASS)
+```
+
+**Exemplo:** *InsectSprays*, do próprio R. A função `boxcox()` pode ser utilizada para calcular a transformação de Box-Cox e identificar o valor de lambda ótimo para uma determinada variável. Essa função retorna uma lista de resultados, incluindo o valor de lambda ótimo e gráficos de diagnóstico.
+
+### Importando dados
+
+```{r}
+insects <- InsectSprays
+
+b <- boxcox(lm(insects$count+0.1 ~1))
+```
+
+```{r}
+lambda <- b$x[which.max(b$y)]
+lambda
+```
+
+```{r}
+insects$count2 <- (insects$count ^ lambda - 1) / lambda
+
+hist(insects$count, 
+     col = "#1A8C8C",        # cor do histograma
+     main = "Histograma de Count Transformado", 
+     xlab = "Contagem Transformada")
+```
+
+```{r}
+hist(insects$count2,
+     col = "#1A8C8C",
+     main = "Histograma de Count2 Transformado", 
+     xlab = "Contagem Transformada"
+)
+```

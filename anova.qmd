@@ -1,0 +1,686 @@
+---
+format: html
+editor: visual
+---
+
+# **ANOVA** (Análise de Variância)
+
+É um teste estatístico utilizado para comparar as médias de três ou mais grupos e verificar se há diferenças estatisticamente significativas entre elas. Ao invés de comparar pares de médias individualmente, como no teste t, a ANOVA avalia simultaneamente a variabilidade entre os grupos e dentro dos grupos.
+
+A ANOVA usa o teste F para testar a hipótese nula de que as médias populacionais são iguais contra a hipótese alternativa de que pelo menos uma média é diferente das demais.
+
+## **Anova com 1 fator (***One-way Anova*)
+
+É uma técnica estatística utilizada para comparar as médias de três ou mais grupos que diferem em relação a um único fator (ou variável independente). Esse fator pode representar, por exemplo, diferentes tratamentos, cultivares, doses de um produto ou condições experimentais.
+
+O objetivo é verificar se há diferença significativa entre as médias dos grupos. A hipótese nula assume que todas as médias são iguais, enquanto a hipótese alternativa indica que pelo menos uma delas é diferente.
+
+**Exemplo:** Experimento com um fator e em delineamento inteiramente casualizado (DIC) para comparar o crescimento micelial de diferentes espécies de um fungo fitopatogênico. A resposta a ser estudada é a TCM = taxa de crescimento micelial.
+
+### Importando o conjunto de dados:
+
+```{r}
+library(readxl)
+micelial <- read_excel("dados-diversos.xlsx", "micelial")
+head(micelial)
+```
+
+### Carregando pacotes:
+
+```{r}
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+```
+
+### **Visualização dos dados**:
+
+```{r}
+micelial |>
+  ggplot(aes(x = especie, y = tcm)) +
+  geom_boxplot(utlier.color = NA, fill = "#1A8C8C", color = "black") +
+   geom_jitter(width = 0.1)+
+  labs(
+    x = "Espécie Fúngica",
+    y = "Taxa de Crescimento Micelial"
+  )
+```
+
+### **Modelo usando `aov()`**
+
+Para verificar os dados usando anova, um novo modelo para atribuir a função `aov()` contendo os argumentos tratamento em função da variável resposta deve ser criado (ex.: tcm \~ espécie), o banco de dados referido deve ser enunciado após o argumento separado por vírgula seguido do nome data = nome do conjunto de dados (ex.: micelial). Depois disso, pede um quadro de resumo do novo modelo criado.
+
+```{r}
+aov1 <- aov(tcm ~ especie, data = micelial)
+summary(aov1)
+```
+
+```{r}
+aov2 <- lm(tcm ~ especie, data = micelial) # Outra forma de fazer a ANOVA
+aov2
+```
+
+#### **Testando as premissas**
+
+##### **Testes de Normalidade e Homocedasticidade**
+
+**Teste de Normalidade**
+
+A normalidade dos dados é uma condição importante para muitos testes estatísticos. Ela garante que os resultados das análises, como ANOVA e teste t, sejam confiáveis, pois esses métodos assumem que os dados vêm de uma população com distribuição normal.
+
+**Teste de Homocedasticidade**
+
+Na ANOVA, é necessário que os grupos comparados tenham variâncias semelhantes. Essa condição é chamada de homocedasticidade. Se as variâncias forem muito diferentes (heterocedasticidade), os resultados do teste F podem ser comprometidos.
+
+Para testar as premissas, é necessário instalar e carregar o pacote `performance` e o pacote `DHARMa`.
+
+O pacote `performance` permite checar as premissas `(check_)`, já o pacote `DHARMA` (*Distributed Hierarchical Accumulation of Residuals for Generalized Linear Models in R*) é para visualizar os dados pelo diagnóstico do resíduo. O pacote `DHARMa` permite faz uma comparação dos resíduos simulados, que são gerados pelo pacote, com os resíduos observados e ver graficamente quando a distribuição dos dados não é normal e/ou quando há variação heterocedástica.
+
+Após isso, deve-se fazer o teste de normalidade dos resíduos com a interação entre a anova e os resíduos.
+
+```{r}
+library(performance)
+check_heteroscedasticity(aov1)
+```
+
+```{r}
+check_normality(aov1)
+```
+
+```{r}
+library(DHARMa)
+hist (aov1$residuals) #Ou hist(residuals(aov1))
+
+# Mostra a distribuição visual dos resíduos.
+```
+
+```{r}
+qqnorm(aov1$residuals)
+qqline(aov1$residuals)
+```
+
+```{r}
+plot(simulateResiduals(aov1))
+```
+
+```{r}
+shapiro.test(aov1$residuals) #Ou shapiro.test(residuals(aov1)) 
+```
+
+O teste verifica a seguinte hipótese:
+
+-   **Hipótese nula (H₀)**: Os dados seguem distribuição normal;
+
+-   **Hipótese alternativa (H₁)**: Os dados não seguem distribuição normal.
+
+Comparamos o p-valor com um nível de significância comum, geralmente **α = 0,05**:
+
+**p-valor = 0,8782 \> 0,05** → Não rejeitamos a hipótese nula
+
+Homogeneidade de variâncias:
+
+```{r}
+# Teste de Bartlett – mais sensível a desvios da normalidade
+bartlett.test(tcm ~ especie, data = micelial)
+```
+
+```{r}
+# Teste de Levene – mais robusto à violação da normalidade
+library(car)
+leveneTest(tcm ~ especie, data = micelial)
+```
+
+##### Interpretação dos Resultados:
+
+-   **p-valor \> 0,05** → Não há evidência de variâncias diferentes → Premissa atendida.
+
+-   **p-valor \< 0,05** → As variâncias são significativamente diferentes → Premissa violada.
+
+#### Comparações múltiplas e médias ajustadas
+
+**Pacote “emmeans”**
+
+(“*estimated marginal means*”, ou médias marginais estimadas) é usado para realizar testes de comparação de médias entre grupos, ajustando para outros fatores importantes que podem influenciar as médias. O pacote é particularmente útil em modelos lineares generalizados (GLM).
+
+`emmeans(...)`: calcula as médias ajustadas (médias marginais) para cada grupo de `especie` com base no modelo.
+
+Importante para comparações entre grupos quando há mais de 2 níveis.
+
+```{r}
+library(emmeans)
+m <- emmeans(aov2, ~ especie)
+m
+```
+
+**Testes post-hoc (comparações entre grupos)**
+
+**Pacote “multcomp” -** `multcomp`: para fazer comparações múltiplas entre grupos.
+
+Testes simultâneos e intervalos de confiança para hipóteses lineares gerais em modelos paramétricos, incluindo efeitos lineares, lineares generalizados, lineares mistos e modelos de sobrevivência.
+
+**Pacote “multcompView” -** `multcompView`: para gerar **letras compactas**, indicando quais grupos são diferentes.
+
+Converte um vetor lógico ou um vetor de valores-*p* ou uma matriz de correlação, diferença ou distância em uma exibição identificando os pares para os quais as diferenças não foram significativamente diferentes.
+
+**Cld -** Extrai e exibe informações sobre todas as comparações pareadas de médias de mínimos quadrados.
+
+```{r}
+library(multcomp)
+library(multcompView)
+
+cld(m)
+```
+
+```{r}
+pairs(m) #Mostra os testes pareados (comparação entre pares de grupos).
+```
+
+```{r}
+pwpm(m) #Exibe uma matriz com as médias na diagonal e comparações entre os grupos fora dela.
+```
+
+## ANOVA fatorial (two-way ANOVA)
+
+A ANOVA fatorial é utilizada quando há duas ou mais variáveis independentes (fatores), cada uma com dois ou mais níveis. Ela é apropriada para experimentos fatoriais completos, nos quais todas as combinações possíveis entre os níveis dos fatores são testadas. Além de avaliar os efeitos individuais de cada fator, essa análise também permite verificar se existe interação entre os fatores, ou seja, se o efeito de um fator depende dos níveis do outro.
+
+### Importando o conjunto de dados:
+
+Banco de dados utilizado: fungicida-vaso (conjunto de dados do dados diversos). Objeto nomeado como fung_vaso.
+
+```{r}
+library(tidyverse)
+library(readxl)
+
+fung_vaso <- read_xlsx("dados-diversos.xlsx", sheet = "fungicida_vaso")
+```
+
+**`factor(dose)`**: converte a variável `dose` em fator (categórica);
+
+**`severity * 100`**: transforma a variável de severidade em percentual;
+
+**`geom_jitter()`**: mostra os pontos com leve deslocamento horizontal, evitando sobreposição;
+
+**`facet_wrap(~ treat)`**: separa os gráficos por tratamento (`treat`).
+
+```{r}
+fung_vaso |> 
+  ggplot(aes(factor(dose), severity*100))+ #transformando dose em um fator e ##transformar para percentual *100
+  geom_jitter(width = 0.1)+
+  facet_wrap(~ treat)
+```
+
+### Modelo linear com interação
+
+```{r}
+m_anti <- lm(severity ~ treat * dose, data = fung_vaso)
+anova(m_anti)
+```
+
+#### Checagem das premissas e visualização com DHARMa:
+
+```{r}
+library(DHARMa)
+plot(simulateResiduals(m_anti))
+```
+
+#### Médias ajustadas com `emmeans`
+
+```{r}
+media_anti <- emmeans(m_anti, ~ treat | dose)
+media_anti
+```
+
+#### Comparações múltiplas
+
+```{r}
+cld(media_anti)
+```
+
+##### Agora inverte: médias de doses dentro de tratamentos
+
+```{r}
+media_anti <- emmeans(m_anti, ~ dose | treat)
+media_anti
+cld(media_anti)
+```
+
+#### Coeficiente de variação
+
+Essa função do pacote `agricolae` calcula o coeficiente de variação (CV%) do modelo.
+
+Ajuda a avaliar a precisão experimental. Valores abaixo de 20% geralmente são considerados bons (mas depende do contexto).
+
+```{r}
+library(agricolae)
+cv.model(m_anti)
+```
+
+#### E se não houver interação significativa?
+
+Mostra os efeitos **individuais de dose e tratamento**, ignorando a interação.
+
+```{r}
+library(patchwork)
+
+p1 <- fung_vaso |> 
+  ggplot(aes(factor(dose), severity*100)) + 
+  geom_jitter(width = 0.1)
+p2 <- fung_vaso |> 
+  ggplot(aes(treat, severity*100)) + 
+  geom_jitter(width = 0.1)
+p1 + p2
+```
+
+#### Visualização da interação
+
+-   Gera um gráfico de interação;
+
+-   Se as linhas forem paralelas, não há interação;
+
+-   Se forem cruzadas ou afastadas, pode indicar interação.
+
+```{r}
+interaction.plot(fung_vaso$treat, fung_vaso$dose, fung_vaso$severity)
+```
+
+Tabela
+
+|          | 0.5     | 0.2    |
+|----------|---------|--------|
+| LI       | 29.2 Aa | 5.0 Ab |
+| TEBU     | 2.1 Ba  | 2.0 Aa |
+| cv = 63% |         |        |
+
+### Exemplo:
+
+#### Pacote `epifitter` e dados:
+
+```{r}
+#install.packages("epifitter")
+library(epifitter)
+oidio <- PowderyMildew
+```
+
+#### Visualização dos dados filtrados
+
+Filtra apenas 3 tipos de irrigação.
+
+`sev*100`: transforma a severidade (que vai de 0 a 1) para percentual (0–100%).
+
+`facet_grid(moisture ~ irrigation_type)`: cria um painel com um gráfico para cada combinação de `moisture` (umidade) e `irrigation_type` (tipo de irrigação).
+
+O gráfico mostra como a doença evolui ao longo do tempo (`time`).
+
+```{r}
+oidio |> 
+  filter(irrigation_type %in% c("MS", "MS above canopy", "Overhead")) |> 
+  ggplot(aes(time, sev*100)) + 
+  geom_jitter(width = 0.1) +
+  facet_grid(moisture ~ irrigation_type)
+```
+
+#### Cálculo da AUDPC (Área Abaixo da Curva de Progresso da Doença)
+
+`group_by(...)` agrupa os dados por tratamento (irrigação, umidade e bloco);
+
+`AUDPC(...)` calcula a área abaixo da curva para cada grupo;
+
+A AUDPC resume a intensidade da doença ao longo do tempo.
+
+```{r}
+library(dplyr)
+library(epifitter)
+
+oidio3 <- oidio |>
+  group_by(irrigation_type, moisture, block) |>
+  summarise(AUDPC = AUDPC(time, sev), .groups = "drop")
+```
+
+#### Visualizando a AUDPC
+
+```{r}
+oidio3 |> 
+  filter(irrigation_type %in% c("MS", "MS above canopy", "Overhead")) |>
+  ggplot(aes(irrigation_type, AUDPC, color = moisture)) +
+  geom_point(width = 0.1) +
+  scale_y_continuous(limits = c(0, 20))
+```
+
+#### ANOVA fatorial (efeito da irrigação e umidade na AUDPC)
+
+```{r}
+oidio4 <- oidio3 |> 
+  filter(irrigation_type %in% c("MS", "MS above canopy", "Overhead"))
+
+anov_oidio <- lm(AUDPC ~ irrigation_type * moisture, data = oidio4)
+anova(anov_oidio)
+```
+
+#### Diagnóstico do modelo
+
+```{r}
+plot(simulateResiduals(anov_oidio))
+```
+
+#### Médias ajustadas com `emmeans`
+
+```{r}
+medias_oidio <- emmeans(anov_oidio, ~ irrigation_type | moisture)
+medias_oidio
+cld(medias_oidio)
+```
+
+Agora, inverte: mostra as médias de umidade dentro de cada tipo de irrigação.
+
+```{r}
+medias_oidio2 <- emmeans(anov_oidio, ~ moisture | irrigation_type)
+medias_oidio2
+cld(medias_oidio2)
+```
+
+#### Coeficiente de variação do modelo
+
+Indica a precisão do experimento - valores menores geralmente indicam maior confiabilidade
+
+```{r}
+cv.model(anov_oidio)
+```
+
+Tabela
+
+|           | H. moisture | M. moisture |
+|-----------|-------------|-------------|
+| MS        | 8.52 Aa     | 11.18 Ab    |
+| MS Ac.    | 3.99 Ba     | 4.86 Bb     |
+| Overhead  | 3.68 Ba     | 3.81 Ca     |
+| CV = 6.41 |             |             |
+
+## Anova Fatorial - 3 Fatores
+
+### Exemplo:
+
+Dados sobre a interação entre tipo de armazenamento e umidade.
+
+```{r}
+milho <- read_excel("dados-diversos.xlsx", "armazena")
+milho |>
+  filter(tempo ==8) |>
+  ggplot(aes(factor(tipo), peso_mil,
+             color = factor(umidade)))+
+  geom_jitter(width = 0.1)+
+  facet_wrap(~ umidade)
+```
+
+Testar a interação entre o tipo de armazenamento e o tempo 8
+
+```{r}
+milho2 <- milho |>
+  filter(tempo ==8)
+
+m2 <- aov(peso_mil ~ factor(tipo)*factor(umidade),
+          data = milho2)
+summary(m2)
+```
+
+Testanto tipo de inoculação na incidencia de *Fusarium* sp. em milho
+
+```{r}
+milho3 <- read_excel("dados-diversos.xlsx", "milho")
+
+m4 <- aov(yield ~hybrid*method,
+          data = milho3)
+summary(m4)
+```
+
+Checagem das premissas
+
+```{r}
+check_heteroscedasticity(m4)
+```
+
+```{r}
+plot(simulateResiduals(m4))
+```
+
+Médias ajustadas com `emmeans`
+
+```{r}
+medias_m4 <- emmeans(m4, ~ hybrid)
+medias_m4
+```
+
+```{r}
+cld(medias_m4)
+```
+
+Caso a interação não dê sifnificativa, tira a interação e deixa só o fator que teve significancia (isola o fator)
+
+```{r}
+m5 <- aov(yield ~hybrid, data = milho3)
+summary(m5)
+```
+
+```{r}
+m4 <- aov(yield ~hybrid,
+          data = milho3)
+summary(m5)
+```
+
+```{r}
+check_heteroscedasticity(m5)
+```
+
+```{r}
+medias_m5 <- emmeans(m5, ~hybrid)
+medias_m5
+```
+
+```{r}
+cld(medias_m5)
+```
+
+```{r}
+pwpm(medias_m5)
+```
+
+## **ANOVA com bloco**
+
+### **Anova com bloco - Delineamento em Blocos Casualizado (DBC)**
+
+O (DBC) envolve os três princípios da experimentação: repetição, casualização e controle local. Neste caso, as condições locais não são homogêneas e podem ter efeito significativo sobre os tratamentos.
+
+#### Carregando pacotes e dados
+
+Usando o conjunto de dados fungicida_campo
+
+```{r}
+library(readxl)
+library(Hmisc)
+fung_campo <- read_xlsx("dados-diversos.xlsx", sheet = "fungicida_campo")
+```
+
+#### Gráfico de produção por tratamento
+
+`mutate(TRAT = factor(TRAT))`: transforma os tratamentos (TRAT) em fatores para garantir que o `ggplot` os trate como categorias.
+
+`geom_jitter`: mostra os dados de cada parcela/bloco, deslocados horizontalmente para evitar sobreposição.
+
+`stat_summary(fun.data = "mean_cl_boot")`: adiciona médias com intervalos de confiança via bootstrap.
+
+```{r}
+fung_campo |> 
+  mutate(TRAT = factor(TRAT)) |> 
+  ggplot(aes(TRAT, PROD)) +
+  geom_jitter(width = 0.2) +
+  stat_summary(fun.data = "mean_cl_boot", colour = "red", width = 0.3)
+
+```
+
+#### Convertendo variáveis em fatores
+
+Aqui, você transforma `TRAT` e `BLOCO` explicitamente em **fatores**, pois o R trata números como contínuos por padrão.
+
+```{r}
+fung_campo$TRAT <- factor(fung_campo$TRAT)
+fung_campo$BLOCO <- factor(fung_campo$BLOCO)
+```
+
+#### **Modelo Anova com bloco**
+
+ANOVA com efeito de blocos e tratamentos:
+
+```{r}
+anova_campo <- lm(PROD ~ BLOCO + TRAT, data = fung_campo)
+anova(anova_campo)
+
+```
+
+#### Checagem das premissas
+
+```{r}
+library(performance)
+library(DHARMa)
+check_normality(anova_campo)
+check_heteroscedasticity(anova_campo)
+```
+
+```{r}
+library(DHARMa)
+plot(simulateResiduals(anova_campo))
+```
+
+#### Estimativa e comparação das médias dos tratamentos
+
+```{r}
+means_campo <- emmeans(anova_campo, ~ TRAT)
+means_campo
+```
+
+```{r}
+library(multcomp)
+cld(means_campo)
+```
+
+```{r}
+plot(means_campo)
+pwpp(means_campo)
+pwpm(means_campo)
+```
+
+Análise da Severidade da Ferrugem (`FER`):
+
+#### ANOVA com transformação logarítmica
+
+```{r}
+anova_fer <- lm(log(FER) ~ BLOCO + TRAT, data = fung_campo)
+anova(anova_fer)
+```
+
+#### Diagnóstico do modelo
+
+```{r}
+plot(simulateResiduals(anova_fer))
+```
+
+#### Médias com back-transformation
+
+```{r}
+means_fer <- emmeans(anova_fer, ~ TRAT, type = "response")
+```
+
+```{r}
+cld(means_fer)
+plot(means_fer)
+pwpp(means_fer)
+pwpm(means_fer)
+```
+
+## **Delineamento em parcela subdividida (*Split-plot*)**
+
+### Importando o conjunto de dados:
+
+Exemplo:
+
+```{r}
+milho <- read_excel("dados-diversos.xlsx", "milho")
+```
+
+#### Visualizando os dados
+
+```{r}
+milho |> 
+  
+  ggplot(aes(hybrid, index, color = method))+
+  geom_jitter(width = 0.1)+
+ coord_flip()
+```
+
+#### **Ajustando o modelo**:
+
+```{r}
+aov_milho_bloco <- aov(index ~ factor(block) + hybrid*method + 
+Error(factor(block)/hybrid/method), data = milho)
+
+summary(aov_milho_bloco)
+```
+
+#### **Checagem das premissas**
+
+Em parcelas subdivididas não é possível checar as premissas pelo check\_, então usa lme4, para checar pelo modelo misto.
+
+##### **Pacote “lme4”**
+
+Ajusta modelos de efeitos mistos lineares e lineares generalizados. Os modelos e seus componentes são representados usando classes e métodos S4.
+
+##### **Função “lmer”**
+
+Gera um componente aleatório que é específico a cada indivíduo, de modo que podemos ter, para cada um, um intercepto e uma inclinação distintas.
+
+```{r}
+library(Matrix)
+library(lme4)
+milho$block <- as.factor(milho$block)
+mix2 <- lmer(index ~ block + hybrid*method + 
+(1|block/hybrid), data =  milho)
+
+library(car)
+Anova(mix2)
+```
+
+```{r}
+check_normality(mix2)
+```
+
+```{r}
+check_heteroscedasticity(mix2)
+```
+
+#### Necessário transformar os dados
+
+```{r}
+milho$block <- as.factor(milho$block)
+mix2 <- lmer(sqrt(index) ~ block + hybrid*method + (1|block/hybrid), data = milho)
+library(car)
+Anova(mix2)
+```
+
+##### Checagem
+
+```{r}
+check_normality(mix2)
+```
+
+```{r}
+check_heteroscedasticity(mix2)
+```
+
+#### **Comparação de médias**
+
+```{r}
+means_mix2 <- emmeans(mix2, ~hybrid | method)
+means_mix2
+```
+
+```{r}
+cld(means_mix2)
+```

@@ -1,0 +1,47 @@
+{
+  "introducao.qmd": {
+    "introducao.html": "b98c3858"
+  },
+  "about.qmd": {
+    "about.html": "d4884acf"
+  },
+  "pacotes.qmd": {
+    "pacotes.html": "cc749887"
+  },
+  "index.qmd": {
+    "index.html": "d8a779b9"
+  },
+  "importando_dados.qmd": {
+    "importando_dados.html": "dddcf1f3"
+  },
+  "graficos.qmd": {
+    "graficos.html": "6cdd2ef1"
+  },
+  "teste_t.qmd": {
+    "teste_t.html": "e8cf9066"
+  },
+  "transformacao.qmd": {
+    "transformacao.html": "1b9649a1"
+  },
+  "correlacao.qmd": {
+    "correlacao.html": "75360ee3"
+  },
+  "frequencia.qmd": {
+    "frequencia.html": "c00e324e"
+  },
+  "mapas.qmd": {
+    "mapas.html": "1813f6b8"
+  },
+  "teste_media.qmd": {
+    "teste_media.html": "0bf1e229"
+  },
+  "anova.qmd": {
+    "anova.html": "0e0bb58d"
+  },
+  "nao_parametrica.qmd": {
+    "nao_parametrica.html": "380535ab"
+  },
+  "regressao.qmd": {
+    "regressao.html": "bb8689ee"
+  }
+}
